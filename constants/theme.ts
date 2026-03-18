@@ -1,53 +1,88 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import { Platform } from 'react-native';
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
 export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+  // Core backgrounds
+  bg: '#080C14',
+  bgCard: '#0D1421',
+  bgCardAlt: '#111827',
+  bgSurface: '#151E2E',
+
+  // Borders
+  border: '#1E2D42',
+  borderLight: '#243348',
+
+  // Brand / Accent
+  accent: '#00E5FF',        // electric cyan
+  accentDim: '#00B8CC',
+  accentGlow: 'rgba(0,229,255,0.15)',
+
+  // Status colors
+  success: '#00E676',
+  successGlow: 'rgba(0,230,118,0.15)',
+  warning: '#FFB300',
+  warningGlow: 'rgba(255,179,0,0.15)',
+  danger: '#FF1744',
+  dangerGlow: 'rgba(255,23,68,0.15)',
+  dangerDim: '#CC1035',
+
+  // Heart rate
+  heart: '#FF4081',
+  heartGlow: 'rgba(255,64,129,0.2)',
+
+  // Text
+  textPrimary: '#E8F4FD',
+  textSecondary: '#7B9BB8',
+  textMuted: '#3E5470',
+  textLabel: '#5A7A99',
+
+  // Gradients (as arrays for LinearGradient)
+  gradientAccent: ['#00E5FF', '#0070FF'],
+  gradientHeart: ['#FF4081', '#F50057'],
+  gradientTemp: ['#FFB300', '#FF6D00'],
+  gradientMove: ['#00E676', '#00BFA5'],
+  gradientDanger: ['#FF1744', '#D50000'],
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+export const Fonts = {
+  // Use system fonts — in real app swap with expo-font (e.g. SpaceMono, Rajdhani)
+  mono: 'Courier New',
+  heading: 'System',
+  body: 'System',
+};
+
+export const Radius = {
+  sm: 8,
+  md: 14,
+  lg: 20,
+  xl: 28,
+  full: 9999,
+};
+
+export const Shadow = {
+  accent: {
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  heart: {
+    shadowColor: Colors.heart,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+  danger: {
+    shadowColor: Colors.danger,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
-});
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+};

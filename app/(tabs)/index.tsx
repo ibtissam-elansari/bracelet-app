@@ -1,98 +1,225 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { AlertBox } from '@/components/AlertBox';
+import { SensorCard } from '@/components/SensorCard';
+import { Colors, Radius } from '@/constants/theme';
+import { useSensor } from '@/context/SensorContext';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useEffect, useRef } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
-export default function HomeScreen() {
+// ─── Animated connection indicator ───────────────────────────────────────────
+function ConnectionDot({ connected }: { connected: boolean }) {
+  const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (connected) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1.8, duration: 900, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1,   duration: 900, useNativeDriver: true }),
+        ])
+      ).start();
+    }
+  }, [connected]);
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.dotWrap}>
+      <Animated.View
+        style={[styles.dotRing, {
+          transform: [{ scale: pulse }],
+          borderColor: connected ? Colors.success : Colors.textMuted,
+          opacity: connected ? 0.4 : 0,
+        }]}
+      />
+      <View style={[styles.dot, { backgroundColor: connected ? Colors.success : Colors.textMuted }]} />
+    </View>
+  );
+}
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+export default function DashboardScreen() {
+  const { current, connected, alert, dismissAlert } = useSensor();
+  const now = new Date();
+
+  const hrStatus =
+    !current           ? 'inactive' :
+    current.hr > 110 || current.hr < 50 ? 'danger' :
+    current.hr > 95    ? 'warning'  : 'normal';
+
+  const tempStatus =
+    !current           ? 'inactive' :
+    current.temp > 38.5 ? 'danger'  :
+    current.temp > 37.5 ? 'warning' : 'normal';
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>VITAL MONITOR</Text>
+          <Text style={styles.headerSub}>
+            {now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </Text>
+        </View>
+        <View style={styles.connectionBadge}>
+          <ConnectionDot connected={connected} />
+          <Text style={[styles.connectionText, { color: connected ? Colors.success : Colors.textMuted }]}>
+            {connected ? 'LIVE' : 'CONNECTING…'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.divider} />
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Hero — Heart Rate */}
+        <SensorCard
+          label="Heart Rate"
+          value={current?.hr ?? '––'}
+          unit="BPM"
+          iconName="heart-pulse"
+          glowColor={Colors.heart}
+          status={hrStatus}
+          subtitle={
+            !current        ? 'Waiting for device…'    :
+            hrStatus === 'danger'  ? 'Abnormal — check patient' :
+            hrStatus === 'warning' ? 'Slightly elevated'        :
+            'Normal sinus rhythm'
+          }
+          large
+        />
+
+        {/* Row 1 */}
+        <View style={styles.row}>
+          <SensorCard
+            label="Temperature"
+            value={current?.temp ?? '––'}
+            unit="°C"
+            iconName="thermometer"
+            glowColor={Colors.warning}
+            status={tempStatus}
+            subtitle={
+              tempStatus === 'danger'  ? 'Fever detected'  :
+              tempStatus === 'warning' ? 'Elevated'         :
+              'Normal'
+            }
+          />
+          <View style={{ width: 12 }} />
+          <SensorCard
+            label="Movement"
+            value={current ? (current.move ? 'ACTIVE' : 'REST') : '––'}
+            iconName="run"
+            glowColor={Colors.success}
+            status={current ? (current.move ? 'normal' : 'inactive') : 'inactive'}
+            subtitle={current?.move ? 'Patient is moving' : 'No movement'}
+          />
+        </View>
+
+        {/* Row 2 */}
+        <View style={styles.row}>
+          <SensorCard
+            label="Fall Detection"
+            value={current ? (current.fall ? 'FALL!' : 'SAFE') : '––'}
+            iconName="shield-check"
+            glowColor={current?.fall ? Colors.danger : Colors.success}
+            status={current?.fall ? 'danger' : 'normal'}
+            subtitle={current?.fall ? 'EMERGENCY — fall event!' : 'No fall detected'}
+          />
+          <View style={{ width: 12 }} />
+          <SensorCard
+            label="SOS Button"
+            value={current ? (current.sos ? 'SOS!' : 'OK') : '––'}
+            iconName="alarm-light"
+            glowColor={current?.sos ? Colors.danger : Colors.success}
+            status={current?.sos ? 'danger' : 'normal'}
+            subtitle={current?.sos ? 'Button pressed!' : 'Not triggered'}
+          />
+        </View>
+
+        {/* GPS quick info */}
+        <View style={[styles.gpsBar, { borderColor: Colors.border }]}>
+          <View style={styles.gpsLeft}>
+            <MaterialCommunityIcons name="map-marker" size={16} color={Colors.accent} />
+            <Text style={styles.gpsLabel}>GPS COORDINATES</Text>
+          </View>
+          <Text style={styles.gpsCoords}>
+            {current
+              ? `${current.lat.toFixed(5)},  ${current.lon.toFixed(5)}`
+              : 'Awaiting signal…'}
+          </Text>
+        </View>
+
+        {/* Thresholds legend */}
+        <View style={styles.thresholdsCard}>
+          <View style={styles.thresholdsHeader}>
+            <MaterialCommunityIcons name="tune" size={14} color={Colors.textLabel} />
+            <Text style={styles.thresholdsTitle}>ALERT THRESHOLDS</Text>
+          </View>
+          <View style={styles.thresholdRow}>
+            <View style={[styles.thresholdDot, { backgroundColor: Colors.danger }]} />
+            <Text style={styles.thresholdText}>HR &gt; 110 BPM or &lt; 50 BPM</Text>
+          </View>
+          <View style={styles.thresholdRow}>
+            <View style={[styles.thresholdDot, { backgroundColor: Colors.warning }]} />
+            <Text style={styles.thresholdText}>Temp &gt; 38.5 °C (fever)</Text>
+          </View>
+          <View style={styles.thresholdRow}>
+            <View style={[styles.thresholdDot, { backgroundColor: Colors.danger }]} />
+            <Text style={styles.thresholdText}>Fall detected or SOS pressed</Text>
+          </View>
+        </View>
+
+        <View style={{ height: 24 }} />
+      </ScrollView>
+
+      {/* ── Alert overlay (shown on caregiver's device) ── */}
+      {alert && (
+        <AlertBox
+          visible={!!alert}
+          alert={alert}
+          onDismiss={dismissAlert}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safe: { flex: 1, backgroundColor: Colors.bg },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  headerTitle: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, letterSpacing: 2 },
+  headerSub:   { fontSize: 12, color: Colors.textSecondary, marginTop: 2, letterSpacing: 0.5 },
+  connectionBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: Colors.bgSurface,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  connectionText: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
+  dotWrap:  { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  dotRing:  { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 },
+  dot:      { width: 8, height: 8, borderRadius: 4 },
+  divider:  { height: 1, backgroundColor: Colors.border, marginHorizontal: 20 },
+  scroll:   { padding: 16, gap: 12 },
+  row:      { flexDirection: 'row' },
+  gpsBar: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.md, borderWidth: 1,
+    padding: 16, flexDirection: 'row',
+    justifyContent: 'space-between', alignItems: 'center', marginTop: 4,
   },
+  gpsLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  gpsLabel: { fontSize: 11, fontWeight: '600', color: Colors.textLabel, letterSpacing: 1 },
+  gpsCoords:{ fontSize: 13, color: Colors.accent, fontWeight: '600', fontFamily: 'Courier New' },
+  thresholdsCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border,
+    padding: 14, gap: 8, marginTop: 4,
+  },
+  thresholdsHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  thresholdsTitle:  { fontSize: 10, fontWeight: '700', color: Colors.textLabel, letterSpacing: 1.5 },
+  thresholdRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  thresholdDot:     { width: 6, height: 6, borderRadius: 3 },
+  thresholdText:    { fontSize: 12, color: Colors.textSecondary },
 });
