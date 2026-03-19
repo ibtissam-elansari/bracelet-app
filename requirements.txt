@@ -1,0 +1,240 @@
+# ============================================================
+#  VITAL MONITOR — Requirements
+#  IoT Health Bracelet Mobile Application
+#  ESP32 + SIM800L + MQTT + React Native (Expo)
+# ============================================================
+
+
+# ── OPERATING SYSTEM ─────────────────────────────────────────
+
+macOS >= 12.0 (Monterey or later)
+  Tested on: macOS 14 Sonoma, Apple M1 / M2 / M3 and Intel
+
+Windows 10 (version 1903 or later) or Windows 11
+  Tested on: Windows 11 22H2, 64-bit
+
+Ubuntu 20.04 LTS or later (or equivalent Debian-based distro)
+  Tested on: Ubuntu 22.04 LTS
+
+
+# ── REQUIRED SOFTWARE (all platforms) ────────────────────────
+
+Node.js >= 18.0.0
+  macOS:   brew install node
+  Windows: https://nodejs.org  (download LTS installer)
+  Linux:   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+           sudo apt install -y nodejs
+  Verify:  node --version
+
+npm >= 9.0.0
+  Comes bundled with Node.js
+  Verify:  npm --version
+
+Git >= 2.30
+  macOS:   brew install git
+  Windows: https://git-scm.com/download/win
+  Linux:   sudo apt install -y git
+  Verify:  git --version
+
+Mosquitto MQTT Broker >= 2.0
+  macOS:   brew install mosquitto
+  Windows: https://mosquitto.org/download  (Windows 64-bit installer)
+  Linux:   sudo apt install -y mosquitto mosquitto-clients
+
+  Must be configured with TWO listeners:
+    port 1883  — raw TCP MQTT    (for ESP32 firmware)
+    port 9001  — WebSocket MQTT  (for React Native app)
+  Both with allow_anonymous true
+
+  Config file locations:
+    macOS:   /opt/homebrew/etc/mosquitto/mosquitto.conf
+    Windows: C:\Program Files\mosquitto\mosquitto.conf
+    Linux:   /etc/mosquitto/conf.d/bracelet.conf  (create this file)
+
+  Required config content to add:
+    listener 1883
+    protocol mqtt
+
+    listener 9001
+    protocol websockets
+
+    allow_anonymous true
+
+
+# ── MOBILE DEVICE ─────────────────────────────────────────────
+
+Expo Go app (free)
+  iOS:     https://apps.apple.com/app/expo-go/id982107779
+  Android: https://play.google.com/store/apps/details?id=host.exp.exponent
+
+iOS >= 16.0
+  OR
+Android >= 10.0 (API level 29)
+
+Same WiFi network as the development computer
+  The phone must reach the computer's local IP on port 9001.
+  Note: corporate/university WiFi often blocks device-to-device traffic.
+  Use a personal hotspot if the QR code loads but the app does not connect.
+
+Internet access on the phone
+  Required to load Leaflet map tiles from cartocdn.com.
+
+
+# ── JAVASCRIPT DEPENDENCIES ───────────────────────────────────
+# Installed automatically by running: npm install
+
+expo@~51.0.28
+  Core Expo SDK
+
+expo-router@~3.5.23
+  File-based navigation for React Native
+
+react@18.2.0
+react-native@0.74.5
+react-dom@18.2.0
+  Core React and React Native
+
+mqtt@^5.10.1
+  MQTT client over WebSocket
+  Connects to Mosquitto on port 9001
+  Requires metro.config.js to set:
+    config.resolver.unstable_enablePackageExports = true
+
+@react-native-async-storage/async-storage@1.23.1
+  Persists emergency contact and broker config across app restarts
+
+react-native-svg@15.2.0
+  Required for the animated heart rate ring gauge
+
+react-native-webview@13.8.6
+  Required for the Leaflet GPS map
+
+react-native-chart-kit@^6.12.0
+  Line charts on the History screen (heart rate + temperature)
+
+react-native-safe-area-context@4.10.5
+  Handles iPhone notch and Android status bar padding
+
+react-native-screens@3.31.1
+  Native screen stack for expo-router
+
+react-native-gesture-handler@~2.16.1
+  Swipe and touch gesture recognition
+
+react-native-reanimated@~3.10.1
+  High-performance animations
+
+react-native-web@~0.19.10
+  Web build target support
+
+@expo/vector-icons@^14.0.2
+  MaterialCommunityIcons icon set
+  All icons in this app use MaterialCommunityIcons exclusively.
+  Emoji must NOT be used inside Text components on Android.
+
+expo-status-bar@~1.12.1
+expo-font@~12.0.10
+expo-linking@~6.3.1
+expo-constants@~16.0.2
+expo-splash-screen@~0.27.5
+expo-system-ui@~3.0.7
+expo-haptics@~13.0.1
+expo-notifications@~0.28.19
+  Standard Expo built-in modules
+
+@babel/core@^7.24.0
+  JavaScript compiler (development only)
+
+@types/react@~18.2.45
+  TypeScript type definitions for React (development only)
+
+typescript@^5.3.3
+  TypeScript compiler (development only)
+
+
+# ── ARDUINO AND ESP32 DEPENDENCIES ───────────────────────────
+# Installed via Arduino IDE Library Manager
+
+Arduino IDE >= 2.0.0
+  Download: https://www.arduino.cc/en/software
+  Available for macOS, Windows, and Linux
+
+ESP32 Board Support Package
+  In Arduino IDE: File → Preferences → Additional Boards Manager URLs
+  Add: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+  Then: Tools → Boards Manager → search "esp32" → install by Espressif Systems
+  Board to select when uploading: ESP32 Dev Module
+
+PubSubClient by Nick O'Leary >= 2.8
+  MQTT over TCP for ESP32 (connects to Mosquitto port 1883)
+  Tools → Manage Libraries → search: PubSubClient
+
+MAX30105 by SparkFun Electronics >= 1.1.2
+  Sensor driver for MAX30102 heart rate module (compatible)
+  Tools → Manage Libraries → search: MAX30105
+
+DallasTemperature by Miles Burton >= 3.9.0
+  DS18B20 temperature sensor driver
+  Tools → Manage Libraries → search: DallasTemperature
+
+OneWire by Miles Burton >= 2.3.7
+  Required dependency for DallasTemperature
+  Tools → Manage Libraries → search: OneWire
+
+MPU6050 by Electronic Cats >= 1.3.0
+  Accelerometer and gyroscope driver for fall detection
+  Tools → Manage Libraries → search: MPU6050
+
+TinyGPS++ by Mikal Hart >= 1.0.3
+  GPS NMEA sentence parser for NEO-6M module
+  Tools → Manage Libraries → search: TinyGPSPlus
+
+
+# ── HARDWARE COMPONENTS ──────────────────────────────────────
+
+ESP32 Dev Module (38 pins)
+  Built-in WiFi 802.11 b/g/n and Bluetooth 4.2
+
+MAX30102 Heart Rate and Pulse Oximetry Sensor
+  Connection: I2C — SDA to pin 21, SCL to pin 22
+  Supply: 3.3V
+
+DS18B20 Digital Temperature Sensor (waterproof probe recommended)
+  Connection: OneWire data to pin 4
+  Supply: 3.3V or 5V
+  Requires: 4.7k ohm pull-up resistor between data pin and VCC
+
+MPU-6050 6-Axis IMU (Accelerometer + Gyroscope)
+  Connection: I2C — SDA to pin 21, SCL to pin 22 (shared with MAX30102)
+  Supply: 3.3V
+
+NEO-6M GPS Module
+  Connection: UART — TX of NEO-6M to pin 16 (RX2) of ESP32
+  Supply: 3.3V
+  Note: needs clear sky or window for satellite fix
+  External antenna strongly recommended for indoor use
+
+SIM800L GSM/GPRS Module
+  Connection: UART — TX of SIM800L to pin 26, RX to pin 27
+  Supply: 3.7V to 4.2V (CANNOT be powered from ESP32 3.3V pin)
+  Requires: dedicated LiPo or 4xAA battery supply
+  Requires: 100uF electrolytic capacitor across VCC and GND power pins
+            to handle 2A current spikes during GSM transmission
+  Requires: SIM card with active SMS plan inserted
+
+SOS Push Button
+  Connection: one leg to pin 15, other leg to GND
+  Software: INPUT_PULLUP mode, triggers on falling edge
+
+ERM Vibration Motor 3V
+  Connection: positive through NPN transistor (e.g. 2N2222 or BC547)
+              base of transistor to pin 2 via 1k ohm resistor
+              collector to motor positive, emitter to GND
+              1N4007 flyback diode across motor terminals
+  Supply: 3.3V through transistor
+
+Lithium battery 3.7V (1000mAh or larger)
+  With TP4056 charging module for USB recharging
+
+Connecting wires
+Breadboard or custom PCB for assembly
