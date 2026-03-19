@@ -1,132 +1,112 @@
-import { ActiveAlert, AlertType } from '@/context/SensorContext';
+import { AlertRecord, AlertType } from '@/context/SensorContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated, Modal, StyleSheet, Text,
-  TouchableOpacity, Vibration, View,
-} from 'react-native';
+import { Animated, Modal, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { Colors, Radius } from '../constants/theme';
 
 type MCIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-const CONFIG: Record<AlertType, {
-  icon: MCIcon; color: string; glowColor: string; vibrate: number[];
-}> = {
-  fall:      { icon: 'alert-circle', color: Colors.danger,  glowColor: Colors.dangerGlow,  vibrate: [0,400,150,400,150,500] },
-  sos:       { icon: 'alarm-light',  color: Colors.danger,  glowColor: Colors.dangerGlow,  vibrate: [0,500,100,500,100,600] },
-  hr_high:   { icon: 'heart-pulse',  color: Colors.heart,   glowColor: Colors.heartGlow,   vibrate: [0,300,200,300] },
-  hr_low:    { icon: 'heart-pulse',  color: Colors.heart,   glowColor: Colors.heartGlow,   vibrate: [0,300,200,300] },
-  temp_high: { icon: 'thermometer',  color: Colors.warning, glowColor: Colors.warningGlow, vibrate: [0,250,200,250] },
+const CFG: Record<AlertType, { icon: MCIcon; color: string; glow: string; vibe: number[] }> = {
+  fall:      { icon: 'alert-circle',  color: Colors.danger,  glow: Colors.dangerGlow,  vibe: [0,400,150,400,150,500] },
+  sos:       { icon: 'alarm-light',   color: Colors.danger,  glow: Colors.dangerGlow,  vibe: [0,500,100,500,100,600] },
+  hr_high:   { icon: 'heart-pulse',   color: Colors.heart,   glow: Colors.heartGlow,   vibe: [0,300,200,300] },
+  hr_low:    { icon: 'heart-pulse',   color: Colors.heart,   glow: Colors.heartGlow,   vibe: [0,300,200,300] },
+  temp_high: { icon: 'thermometer',   color: Colors.warning, glow: Colors.warningGlow, vibe: [0,250,200,250] },
 };
 
-type Props = { visible: boolean; alert: ActiveAlert; onDismiss: () => void };
+type Props = { visible: boolean; alert: AlertRecord; onDismiss: () => void };
 
 export function AlertBox({ visible, alert, onDismiss }: Props) {
-  const scaleAnim   = useRef(new Animated.Value(0.78)).current;
+  const scaleAnim   = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim   = useRef(new Animated.Value(1)).current;
 
-  const cfg         = CONFIG[alert.type];
+  const cfg         = CFG[alert.type];
   const isEmergency = alert.type === 'fall' || alert.type === 'sos';
 
   useEffect(() => {
     if (!visible) return;
-    Vibration.vibrate(cfg.vibrate);
+    Vibration.vibrate(cfg.vibe);
     Animated.parallel([
-      Animated.spring(scaleAnim,   { toValue: 1, useNativeDriver: true, tension: 110, friction: 7 }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
+      Animated.spring(scaleAnim,   { toValue: 1, useNativeDriver: true, tension: 120, friction: 8 }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 240, useNativeDriver: true }),
     ]).start();
-    const pulse = Animated.loop(Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.022, duration: 700, useNativeDriver: true }),
-      Animated.timing(pulseAnim, { toValue: 1,     duration: 700, useNativeDriver: true }),
+    const p = Animated.loop(Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 1.018, duration: 750, useNativeDriver: true }),
+      Animated.timing(pulseAnim, { toValue: 1,     duration: 750, useNativeDriver: true }),
     ]));
-    pulse.start();
-    return () => pulse.stop();
+    p.start();
+    return () => p.stop();
   }, [visible]);
 
   const time = new Date(alert.timestamp).toLocaleTimeString();
 
   return (
     <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
-      <View style={styles.overlay}>
-        <Animated.View style={[styles.backdrop, { opacity: opacityAnim }]} />
+      <View style={s.overlay}>
+        <Animated.View style={[s.backdrop, { opacity: opacityAnim }]} />
 
         <Animated.View style={[
-          styles.card,
+          s.card,
           {
             transform: [{ scale: scaleAnim }, { scale: pulseAnim }],
             opacity: opacityAnim,
-            borderColor: `${cfg.color}50`,
+            borderColor: `${cfg.color}45`,
             shadowColor: cfg.color,
           },
         ]}>
-          {/* Top color bar */}
-          <View style={[styles.topBar, { backgroundColor: cfg.color }]} />
+          <View style={[s.topBar, { backgroundColor: cfg.color }]} />
 
-          {/* Icon circle — vector icon only, no emoji */}
-          <View style={[styles.iconCircle, {
-            backgroundColor: cfg.glowColor,
-            borderColor: `${cfg.color}50`,
-          }]}>
-            <MaterialCommunityIcons name={cfg.icon} size={48} color={cfg.color} />
+          <View style={[s.iconRing, { backgroundColor: cfg.glow, borderColor: `${cfg.color}40` }]}>
+            <MaterialCommunityIcons name={cfg.icon} size={46} color={cfg.color} />
           </View>
 
-          {/* Title — plain text only */}
-          <Text style={[styles.title, { color: cfg.color }]}>{alert.title}</Text>
-          <Text style={styles.timestamp}>{time}</Text>
+          <Text style={[s.title, { color: cfg.color }]}>{alert.title}</Text>
+          <Text style={s.time}>{time}</Text>
+          <Text style={s.detail}>{alert.detail}</Text>
 
-          {/* Detail */}
-          <Text style={styles.detail}>{alert.detail}</Text>
-
-          {/* SMS status — only for fall / SOS (bracelet fires SIM800L) */}
+          {/* SMS status — only for bracelet emergencies */}
           {isEmergency && (
             <View style={[
-              styles.smsBox,
+              s.smsRow,
               {
-                borderColor:     alert.smsSentByBracelet ? `${Colors.success}40` : `${Colors.warning}40`,
+                borderColor:     alert.smsSentByBracelet ? `${Colors.success}35` : `${Colors.warning}35`,
                 backgroundColor: alert.smsSentByBracelet ? Colors.successGlow    : Colors.warningGlow,
               },
             ]}>
               <MaterialCommunityIcons
                 name={alert.smsSentByBracelet ? 'message-check-outline' : 'message-alert-outline'}
-                size={18}
+                size={17}
                 color={alert.smsSentByBracelet ? Colors.success : Colors.warning}
               />
-              <View style={styles.smsTextWrap}>
-                <Text style={[styles.smsTitle, {
-                  color: alert.smsSentByBracelet ? Colors.success : Colors.warning,
-                }]}>
-                  {alert.smsSentByBracelet ? 'SMS sent by bracelet' : 'SMS sending via bracelet…'}
+              <View style={{ flex: 1 }}>
+                <Text style={[s.smsTitle, { color: alert.smsSentByBracelet ? Colors.success : Colors.warning }]}>
+                  {alert.smsSentByBracelet ? 'SMS sent by bracelet' : 'Sending SMS via bracelet…'}
                 </Text>
-                <Text style={styles.smsSub}>
+                <Text style={s.smsSub}>
                   {alert.smsSentByBracelet
-                    ? 'Your emergency contact was notified with your GPS location.'
-                    : 'The SIM800L module is contacting your emergency contact.'}
+                    ? 'Emergency contact notified with GPS location.'
+                    : 'SIM800L GSM module is contacting your emergency contact.'}
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Emergency services note */}
           {isEmergency && (
-            <Text style={styles.emergencyNote}>
-              If needed, call emergency services:{' '}
-              <Text style={{ color: cfg.color, fontWeight: '700' }}>112</Text>
+            <Text style={s.callNote}>
+              Emergency services: <Text style={[s.callNum, { color: cfg.color }]}>112</Text>
             </Text>
           )}
 
-          <View style={styles.divider} />
+          <View style={s.divider} />
 
           <TouchableOpacity
-            style={[styles.ackBtn, {
-              borderColor: `${cfg.color}50`,
-              backgroundColor: cfg.glowColor,
-            }]}
+            style={[s.btn, { borderColor: `${cfg.color}45`, backgroundColor: cfg.glow }]}
             onPress={onDismiss}
             activeOpacity={0.75}
           >
             <MaterialCommunityIcons name="check-circle-outline" size={18} color={cfg.color} />
-            <Text style={[styles.ackText, { color: cfg.color }]}>I'M AWARE</Text>
+            <Text style={[s.btnText, { color: cfg.color }]}>I'M AWARE</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -134,50 +114,36 @@ export function AlertBox({ visible, alert, onDismiss }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   overlay:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(6,10,18,0.95)' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(5,8,14,0.96)' },
   card: {
-    width: '100%', maxWidth: 370,
+    width: '100%', maxWidth: 365,
     backgroundColor: Colors.bgCard,
-    borderRadius: Radius.xl, borderWidth: 1.5,
+    borderRadius: Radius.xxl, borderWidth: 1.5,
     alignItems: 'center', overflow: 'hidden',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6, shadowRadius: 32,
-    elevation: 22, paddingBottom: 26,
+    shadowOpacity: 0.55, shadowRadius: 30, elevation: 20,
+    paddingBottom: 24,
   },
-  topBar:     { width: '100%', height: 4, marginBottom: 22 },
-  iconCircle: {
-    width: 90, height: 90, borderRadius: 45, borderWidth: 1.5,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  topBar:   { width: '100%', height: 3.5, marginBottom: 24 },
+  iconRing: {
+    width: 88, height: 88, borderRadius: 44, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
   },
-  title: {
-    fontSize: 20, fontWeight: '800', letterSpacing: 2.2,
-    marginBottom: 3, textAlign: 'center',
-  },
-  timestamp: { fontSize: 11, color: Colors.textMuted, letterSpacing: 0.5, marginBottom: 10 },
-  detail: {
-    fontSize: 13, color: Colors.textSecondary, textAlign: 'center',
-    paddingHorizontal: 22, lineHeight: 20, marginBottom: 14,
-  },
-  smsBox: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    marginHorizontal: 18, padding: 12,
-    borderRadius: Radius.md, borderWidth: 1, marginBottom: 2,
-  },
-  smsTextWrap: { flex: 1, gap: 3 },
-  smsTitle:    { fontSize: 13, fontWeight: '700' },
-  smsSub:      { fontSize: 11, color: Colors.textMuted, lineHeight: 15 },
-  emergencyNote: {
-    marginTop: 10, marginHorizontal: 24,
-    fontSize: 12, color: Colors.textSecondary,
-    textAlign: 'center', lineHeight: 18,
-  },
-  divider: { width: '80%', height: 1, backgroundColor: Colors.border, marginVertical: 18 },
-  ackBtn: {
+  title:   { fontSize: 19, fontWeight: '800', letterSpacing: 2, textAlign: 'center', marginBottom: 3 },
+  time:    { fontSize: 11, color: Colors.textMuted, letterSpacing: 0.4, marginBottom: 10 },
+  detail:  { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', paddingHorizontal: 22, lineHeight: 19, marginBottom: 14 },
+  smsRow:  { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginHorizontal: 16, padding: 11, borderRadius: Radius.md, borderWidth: 1, marginBottom: 4 },
+  smsTitle:{ fontSize: 12, fontWeight: '700', marginBottom: 2 },
+  smsSub:  { fontSize: 11, color: Colors.textMuted, lineHeight: 15 },
+  callNote:{ marginTop: 10, fontSize: 12, color: Colors.textSecondary },
+  callNum: { fontWeight: '800' },
+  divider: { width: '75%', height: 1, backgroundColor: Colors.border, marginVertical: 18 },
+  btn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingVertical: 12, paddingHorizontal: 40,
     borderRadius: Radius.full, borderWidth: 1.5,
   },
-  ackText: { fontSize: 13, fontWeight: '700', letterSpacing: 2 },
+  btnText: { fontSize: 13, fontWeight: '700', letterSpacing: 2 },
 });

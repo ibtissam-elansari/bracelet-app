@@ -1,4 +1,5 @@
-import { Colors, Radius } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
+import { useSensor } from '@/context/SensorContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
@@ -6,43 +7,59 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 
 type MCIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-// Simple, flat icon renderer — no wrapper View with flex or padding that
-// could intercept taps or clip the icon outside the tab bar hit rect.
-function TabIcon({ name, focused, label }: { name: MCIcon; focused: boolean; label: string }) {
+// Dead-simple tab icon — no wrapper tricks, no flex magic.
+// The icon renders at its natural size inside a fixed-size View.
+function Icon({
+  name, focused, label, badge,
+}: {
+  name: MCIcon; focused: boolean; label: string; badge?: number;
+}) {
   return (
-    <View style={styles.tabIcon}>
-      <View style={[styles.tabPill, focused && styles.tabPillActive]}>
-        <MaterialCommunityIcons
-          name={name}
-          size={22}
-          color={focused ? Colors.accent : Colors.textMuted}
-        />
-        {focused && (
-          <Text style={styles.tabLabel} numberOfLines={1}>{label}</Text>
-        )}
-      </View>
+    <View style={styles.iconWrap}>
+      {/* Icon */}
+      <MaterialCommunityIcons
+        name={name}
+        size={26}
+        color={focused ? Colors.accent : Colors.textMuted}
+      />
+
+      {/* Unread badge */}
+      {!!badge && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      )}
+
+      {/* Active label below icon */}
+      {focused && (
+        <Text style={styles.label} numberOfLines={1}>
+          {label}
+        </Text>
+      )}
     </View>
   );
 }
 
 export default function TabLayout() {
+  const { unreadAlertCount } = useSensor();
+
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: Colors.textMuted,
-        // Remove default tab bar background on iOS to avoid double bg
+        headerShown:       false,
+        tabBarShowLabel:   false,
+        tabBarStyle:       styles.bar,
         tabBarHideOnKeyboard: true,
+        // Let the icon component handle colours — disable Expo's default tinting
+        tabBarActiveTintColor:   Colors.accent,
+        tabBarInactiveTintColor: Colors.textMuted,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="heart-pulse" focused={focused} label="Dashboard" />
+            <Icon name="view-dashboard-outline" focused={focused} label="Dashboard" />
           ),
         }}
       />
@@ -50,7 +67,7 @@ export default function TabLayout() {
         name="map"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="map" focused={focused} label="Map" />
+            <Icon name="map-outline" focused={focused} label="Map" />
           ),
         }}
       />
@@ -58,7 +75,12 @@ export default function TabLayout() {
         name="history"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="chart-line" focused={focused} label="History" />
+            <Icon
+              name="chart-line"
+              focused={focused}
+              label="History"
+              badge={unreadAlertCount}
+            />
           ),
         }}
       />
@@ -66,7 +88,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="account-circle" focused={focused} label="Profile" />
+            <Icon name="cog-outline" focused={focused} label="Settings" />
           ),
         }}
       />
@@ -74,39 +96,51 @@ export default function TabLayout() {
   );
 }
 
+const BAR_HEIGHT = Platform.OS === 'ios' ? 88 : 68;
+
 const styles = StyleSheet.create({
-  tabBar: {
+  bar: {
     backgroundColor: Colors.bgCard,
-    borderTopColor: Colors.border,
-    borderTopWidth: 1,
-    height: Platform.OS === 'ios' ? 84 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 26 : 6,
-    paddingTop: 6,
-    paddingHorizontal: 4,
+    borderTopColor:  Colors.border,
+    borderTopWidth:  1,
+    height:          BAR_HEIGHT,
+    paddingBottom:   Platform.OS === 'ios' ? 28 : 10,
+    paddingTop:      8,
   },
-  // The outer view fills the full tab cell — must NOT have flex or paddingVertical
-  // that would make it taller than the tab bar item, causing invisible overflow.
-  tabIcon: {
-    alignItems: 'center',
+
+  // Fixed square container — prevents layout collapse
+  iconWrap: {
+    width:          54,
+    alignItems:     'center',
     justifyContent: 'center',
+    position:       'relative',
   },
-  tabPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: Radius.full,
-    minWidth: 44,
+
+  // Active label sits below the icon
+  label: {
+    fontSize:      10,
+    fontWeight:    '700',
+    color:         Colors.accent,
+    letterSpacing: 0.3,
+    marginTop:     2,
   },
-  tabPillActive: {
-    backgroundColor: Colors.accentGlow,
+
+  // Badge floats top-right of the icon
+  badge: {
+    position:        'absolute',
+    top:             -3,
+    right:           2,
+    minWidth:        16,
+    height:          16,
+    borderRadius:    8,
+    backgroundColor: Colors.danger,
+    alignItems:      'center',
+    justifyContent:  'center',
+    paddingHorizontal: 3,
   },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.accent,
-    maxWidth: 72,
+  badgeText: {
+    fontSize:   9,
+    fontWeight: '800',
+    color:      '#fff',
   },
 });

@@ -5,97 +5,85 @@ import { Colors, Radius } from '../constants/theme';
 
 export type MCIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-type SensorCardProps = {
-  label: string;
-  value: string | number;
-  unit?: string;
-  iconName: MCIcon;
-  glowColor?: string;
-  status?: 'normal' | 'warning' | 'danger' | 'inactive';
-  subtitle?: string;
-  large?: boolean;
+type Props = {
+  label:       string;
+  value:       string | number;
+  unit?:       string;
+  iconName:    MCIcon;
+  color:       string;
+  status?:     'normal' | 'warning' | 'danger' | 'inactive';
+  subtitle?:   string;
+  flex?:       number;
 };
 
-export function SensorCard({
-  label,
-  value,
-  unit,
-  iconName,
-  glowColor = Colors.accent,
-  status = 'normal',
-  subtitle,
-  large = false,
-}: SensorCardProps) {
+export function SensorCard({ label, value, unit, iconName, color, status = 'normal', subtitle, flex = 1 }: Props) {
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const loopRef   = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
   }, []);
 
   useEffect(() => {
+    loopRef.current?.stop();
     if (status === 'danger') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.04, duration: 500, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-        ])
-      ).start();
+      loopRef.current = Animated.loop(Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.03, duration: 550, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 550, useNativeDriver: true }),
+      ]));
+      loopRef.current.start();
     } else {
       pulseAnim.setValue(1);
     }
+    return () => loopRef.current?.stop();
   }, [status]);
 
-  const statusColor =
+  const displayColor =
     status === 'danger'   ? Colors.danger  :
     status === 'warning'  ? Colors.warning :
     status === 'inactive' ? Colors.textMuted :
-    glowColor;
+    color;
 
-  const statusGlow =
-    status === 'danger'  ? Colors.dangerGlow  :
-    status === 'warning' ? Colors.warningGlow :
-    `${glowColor}20`;
+  const glowColor = `${displayColor}18`;
+  const borderColor = `${displayColor}35`;
 
   return (
-    <Animated.View
-      style={[
-        styles.card,
-        large && styles.cardLarge,
-        {
-          transform: [{ scale: pulseAnim }],
-          opacity: fadeAnim,
-          borderColor: `${statusColor}40`,
-          backgroundColor: Colors.bgCard,
-          shadowColor: statusColor,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: status === 'danger' ? 0.5 : 0.2,
-          shadowRadius: 14,
-          elevation: 6,
-        },
-      ]}
-    >
-      {/* Top accent line */}
-      <View style={[styles.accentLine, { backgroundColor: statusColor }]} />
+    <Animated.View style={[
+      styles.card,
+      { flex, opacity: fadeAnim, transform: [{ scale: pulseAnim }] },
+      { borderColor, backgroundColor: Colors.bgCard },
+      status === 'danger' && {
+        shadowColor: displayColor,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+        elevation: 8,
+      },
+    ]}>
+      {/* Left color bar */}
+      <View style={[styles.colorBar, { backgroundColor: displayColor }]} />
 
-      {/* Header row */}
-      <View style={styles.header}>
-        <View style={[styles.iconBadge, { backgroundColor: statusGlow }]}>
-          <MaterialCommunityIcons name={iconName} size={18} color={statusColor} />
+      <View style={styles.inner}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={[styles.iconWrap, { backgroundColor: glowColor }]}>
+            <MaterialCommunityIcons name={iconName} size={16} color={displayColor} />
+          </View>
+          <Text style={styles.label}>{label}</Text>
         </View>
-        <Text style={styles.label}>{label}</Text>
-      </View>
 
-      {/* Value */}
-      <View style={styles.valueRow}>
-        <Text style={[styles.value, large && styles.valueLarge, { color: statusColor }]}>
-          {value}
-        </Text>
-        {unit ? <Text style={[styles.unit, { color: statusColor + 'AA' }]}>{unit}</Text> : null}
-      </View>
+        {/* Value */}
+        <View style={styles.valueRow}>
+          <Text style={[styles.value, { color: displayColor }]} numberOfLines={1} adjustsFontSizeToFit>
+            {value}
+          </Text>
+          {unit && <Text style={[styles.unit, { color: displayColor + '99' }]}>{unit}</Text>}
+        </View>
 
-      {/* Subtitle */}
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        {/* Subtitle */}
+        {subtitle && <Text style={styles.sub} numberOfLines={1}>{subtitle}</Text>}
+      </View>
     </Animated.View>
   );
 }
@@ -104,64 +92,33 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: Radius.lg,
     borderWidth: 1,
-    padding: 16,
     overflow: 'hidden',
-    flex: 1,
-  },
-  cardLarge: {
-    padding: 20,
-  },
-  accentLine: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    height: 2,
-    borderTopLeftRadius: Radius.lg,
-    borderTopRightRadius: Radius.lg,
-  },
-  header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-    marginTop: 4,
   },
-  iconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+  colorBar: {
+    width: 3,
+    borderTopLeftRadius: Radius.lg,
+    borderBottomLeftRadius: Radius.lg,
+  },
+  inner: { flex: 1, padding: 14, gap: 6 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  iconWrap: {
+    width: 28, height: 28,
+    borderRadius: 7,
+    alignItems: 'center', justifyContent: 'center',
   },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10, fontWeight: '700',
     color: Colors.textLabel,
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
+    flex: 1,
   },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 4,
-  },
+  valueRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
   value: {
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    color: Colors.textPrimary,
+    fontSize: 28, fontWeight: '800',
+    letterSpacing: -0.5, lineHeight: 32,
   },
-  valueLarge: {
-    fontSize: 42,
-  },
-  unit: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 5,
-  },
-  subtitle: {
-    marginTop: 6,
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
+  unit: { fontSize: 12, fontWeight: '600', marginBottom: 3 },
+  sub: { fontSize: 11, color: Colors.textSecondary, fontWeight: '500' },
 });

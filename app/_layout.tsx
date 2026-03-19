@@ -11,7 +11,6 @@ export default function RootLayout() {
         <StatusBar style="light" backgroundColor={Colors.bg} />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.bg } }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
       </View>
     </SensorProvider>

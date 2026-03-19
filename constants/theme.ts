@@ -1,88 +1,70 @@
+// ─── Color Palette ────────────────────────────────────────────────────────────
 export const Colors = {
-  // Core backgrounds
-  bg: '#080C14',
-  bgCard: '#0D1421',
-  bgCardAlt: '#111827',
-  bgSurface: '#151E2E',
+  // Backgrounds — deep dark navy
+  bg:         '#070B12',
+  bgCard:     '#0C1220',
+  bgSurface:  '#111827',
+  bgElevated: '#161F30',
 
   // Borders
-  border: '#1E2D42',
+  border:      '#1C2A3F',
   borderLight: '#243348',
 
-  // Brand / Accent
-  accent: '#00E5FF',        // electric cyan
-  accentDim: '#00B8CC',
-  accentGlow: 'rgba(0,229,255,0.15)',
+  // Brand accent — electric cyan
+  accent:     '#00D4FF',
+  accentSoft: '#00A8CC',
+  accentGlow: 'rgba(0,212,255,0.12)',
+  accentRing: 'rgba(0,212,255,0.25)',
 
-  // Status colors
-  success: '#00E676',
-  successGlow: 'rgba(0,230,118,0.15)',
-  warning: '#FFB300',
-  warningGlow: 'rgba(255,179,0,0.15)',
-  danger: '#FF1744',
-  dangerGlow: 'rgba(255,23,68,0.15)',
-  dangerDim: '#CC1035',
+  // Status
+  success:     '#00E676',
+  successGlow: 'rgba(0,230,118,0.12)',
+  warning:     '#FFB300',
+  warningGlow: 'rgba(255,179,0,0.12)',
+  danger:      '#FF3D57',
+  dangerGlow:  'rgba(255,61,87,0.12)',
 
-  // Heart rate
-  heart: '#FF4081',
-  heartGlow: 'rgba(255,64,129,0.2)',
+  // Sensor-specific
+  heart:       '#FF4D8A',
+  heartGlow:   'rgba(255,77,138,0.15)',
+  temp:        '#FF8C00',
+  tempGlow:    'rgba(255,140,0,0.12)',
+  move:        '#00E676',
+  gps:         '#00D4FF',
 
-  // Text
-  textPrimary: '#E8F4FD',
-  textSecondary: '#7B9BB8',
-  textMuted: '#3E5470',
-  textLabel: '#5A7A99',
+  // Text hierarchy
+  textPrimary:   '#EBF4FF',
+  textSecondary: '#6B8CAE',
+  textMuted:     '#364E68',
+  textLabel:     '#4A6882',
 
-  // Gradients (as arrays for LinearGradient)
-  gradientAccent: ['#00E5FF', '#0070FF'],
-  gradientHeart: ['#FF4081', '#F50057'],
-  gradientTemp: ['#FFB300', '#FF6D00'],
-  gradientMove: ['#00E676', '#00BFA5'],
-  gradientDanger: ['#FF1744', '#D50000'],
-};
-
-export const Fonts = {
-  // Use system fonts — in real app swap with expo-font (e.g. SpaceMono, Rajdhani)
-  mono: 'Courier New',
-  heading: 'System',
-  body: 'System',
+  // Chart
+  chartGrid: '#1C2A3F',
 };
 
 export const Radius = {
-  sm: 8,
+  xs: 6,
+  sm: 10,
   md: 14,
-  lg: 20,
-  xl: 28,
+  lg: 18,
+  xl: 24,
+  xxl: 32,
   full: 9999,
 };
 
 export const Shadow = {
-  accent: {
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  heart: {
-    shadowColor: Colors.heart,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  danger: {
-    shadowColor: Colors.danger,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
-  },
   card: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
   },
+  glow: (color: string) => ({
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  }),
 };
